@@ -15,6 +15,132 @@ immediately.
 
 ---
 
+## 📖 Explained simply (read this first)
+
+### The problem it solves
+Banks process a huge volume of transactions every second. A small number of them
+are dangerous — **fraud, money-laundering, suspicious logins, or transfers so
+large they need compliance sign-off.** Humans cannot watch every transaction by
+hand.
+
+### What this system does
+It **automatically watches every transaction** against a set of rules
+("thresholds"). The moment a transaction breaks a rule, it raises an **alert** on
+a live dashboard so the operations / risk team can review and act on it.
+
+> Think of it as a **smoke detector for banking transactions**: the *rules* are
+> the sensitivity settings, the *alerts* are the alarms, and the *dashboard* is
+> the control panel where staff see and silence the alarms.
+
+**One-line pitch:** *A real-time monitoring dashboard that flags risky banking
+activity the instant it happens and tracks every alert from "Active" to
+"Resolved."*
+
+---
+
+### 🧱 Tech stack — what each piece is and why we chose it
+
+| Part | Technology | What it is (plain English) | Why we use it |
+| --- | --- | --- | --- |
+| **Frontend** (the face) | React + Vite | The interactive web dashboard people look at | Fast, modern, reusable UI building blocks |
+| **Backend** (the brain) | Python + FastAPI | The server that holds all the logic and rules | Simple, fast, and auto-generates API docs |
+| **Database** (the memory) | SQLite | Stores rules, alerts, transactions, and logs | Zero-setup, file-based — ideal for a demo |
+| **Real-time** (the nerves) | WebSockets | Pushes new alerts to the screen instantly | No refresh needed — alerts pop up live |
+
+> **Brain (FastAPI) + Memory (SQLite) + Face (React) + Nerves (WebSockets).**
+
+---
+
+### 🔄 How an alert is born (the flow, step by step)
+
+1. A **transaction** happens — e.g. a ₹75,00,000 transfer. *(In the demo, a
+   built-in **simulator** creates realistic transactions automatically so you can
+   see the system working live.)*
+2. The backend's **threshold engine** checks that transaction against **every
+   active rule**.
+3. If a rule is broken (e.g. *"fund transfer > ₹1 crore"*), it creates an
+   **alert** stamped with a **severity** and **category**.
+4. The alert is **saved**, **written to the logs**, and **pushed live** to the
+   dashboard — a toast notification pops up in the corner.
+5. A team member **Acknowledges** it ("I'm looking into it") and later
+   **Resolves** it ("handled"). Every step is recorded.
+
+---
+
+### 🖥️ The screens & every box explained
+
+The app has **three screens** (top navigation bar): **Dashboard**, **Alert
+Rules**, and **Admin**.
+
+#### 1) Dashboard — the live operations screen
+The main screen the team watches all day.
+
+- **Summary boxes (stat cards) across the top:**
+  | Box | Meaning |
+  | --- | --- |
+  | **Active alerts** (red) | Open alerts that still need attention |
+  | **Acknowledged** (yellow) | Someone has taken ownership and is working on them |
+  | **Resolved** (green) | Closed / handled alerts |
+  | **Alerts (24h)** | How many alerts fired in the last 24 hours |
+  | **Rules enabled** | How many monitoring rules are switched on (e.g. 5/5) |
+  | **Transactions** | Total transactions the system has processed |
+- **Filter bar:** search by text and filter by severity, category, status, and
+  date range to find specific alerts.
+- **Alerts table:** each **row = one alert**, showing its severity, status, which
+  rule triggered it, category, the **source account**, the **actual value vs the
+  threshold** (what happened vs the limit), when it fired, and **Ack / Resolve**
+  buttons. Click a row for full details.
+- **⚡ Simulate event button:** generates a test transaction on demand so you can
+  watch an alert appear live during a demo.
+
+#### 2) Alert Rules — the configuration screen
+Where you decide *what counts as risky*.
+
+- Each **row = one rule**: an on/off toggle, the rule name, its **condition**
+  (e.g. *"Transaction amount > ₹50 lakh"*), category, severity, and Edit/Delete.
+- **"+ New rule"** opens a form to create a rule: choose the **metric** (what to
+  measure), the **operator** (`>`, `>=`, …), the **threshold value**, plus
+  severity and category.
+
+#### 3) Admin Panel — the control room
+For supervisors / authorised users.
+
+- **Metric cards + two bar charts:** alerts broken down **by severity** and **by
+  category** — the at-a-glance health of the system.
+- **Transaction simulator controls:** Start / Stop the live feed, or "Generate
+  one" event manually.
+- **Admin settings:** set the **admin token** (the password that unlocks
+  privileged actions).
+- **System logs:** an **audit trail** of everything the system did (rules created,
+  alerts fired, simulator started, notifications sent…), filterable by level.
+
+---
+
+### 🔐 Permissions — who can do what
+
+The system separates **viewing** from **changing**:
+
+| Action | Who can do it |
+| --- | --- |
+| View alerts, search/filter, **Acknowledge**, **Resolve** | Anyone (operations staff) |
+| **Create / edit / delete rules**, **start/stop the simulator** | **Admins only** (requires the admin token) |
+
+The **admin token** is a shared secret set in the backend `.env`
+(`ADMIN_TOKEN`, default `admin-secret-token`) and entered once under **Admin →
+Admin settings**. The frontend sends it as an `X-Admin-Token` header; the backend
+**rejects privileged requests without it (HTTP 403).** This is a lightweight
+stand-in for full user login + roles, which is the natural next step.
+
+---
+
+### 🏷️ What "severity" and "category" mean
+
+- **Severity = how urgent:** **Critical** › **High** › **Medium** › **Low**.
+- **Category = what kind of risk:** **Fraud**, **Compliance**, **Risk**,
+  **Performance**.
+
+---
+
 ## ✨ Features
 
 **1. Alert configuration**
