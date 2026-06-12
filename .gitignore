@@ -7,10 +7,10 @@ env/
 *.egg-info/
 
 # Database
-*.db
-*.sqlite
-*.sqlite3
-database/*.db
+# *.db
+# *.sqlite
+# *.sqlite3
+# database/*.db
 
 # Environment
 .env
