@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { SeverityBadge, StatusBadge, CategoryBadge } from "./Badges.jsx";
 import { formatDateTime, metricLabel, formatMetricValue } from "../format.js";
-import { updateAlertStatus } from "../api.js";
+import { updateAlertStatus, createAlertTask, updateAlertTask, deleteAlertTask } from "../api.js";
 
 export default function AlertDetailModal({ alert, onClose, onUpdated }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [newTaskText, setNewTaskText] = useState("");
+
+  const tasks = alert.tasks || [];
 
   async function setStatus(status) {
     setBusy(true);
@@ -13,6 +16,48 @@ export default function AlertDetailModal({ alert, onClose, onUpdated }) {
     try {
       const updated = await updateAlertStatus(alert.id, status);
       onUpdated(updated);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAddTask(e) {
+    e.preventDefault();
+    if (!newTaskText.trim()) return;
+    setBusy(true);
+    try {
+      const task = await createAlertTask(alert.id, { description: newTaskText.trim(), is_completed: false });
+      const updatedAlert = { ...alert, tasks: [...tasks, task] };
+      onUpdated(updatedAlert);
+      setNewTaskText("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleToggleTask(task) {
+    setBusy(true);
+    try {
+      const updatedTask = await updateAlertTask(task.id, !task.is_completed);
+      const updatedAlert = { ...alert, tasks: tasks.map(t => t.id === task.id ? updatedTask : t) };
+      onUpdated(updatedAlert);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteTask(taskId) {
+    setBusy(true);
+    try {
+      await deleteAlertTask(taskId);
+      const updatedAlert = { ...alert, tasks: tasks.filter(t => t.id !== taskId) };
+      onUpdated(updatedAlert);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -59,6 +104,46 @@ export default function AlertDetailModal({ alert, onClose, onUpdated }) {
         </table>
 
         {error && <div className="form-error">{error}</div>}
+
+        <div className="tasks-section" style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+          <h3 style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>Checklist / Notes</h3>
+          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1rem 0" }}>
+            {tasks.map(task => (
+              <li key={task.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <input 
+                  type="checkbox" 
+                  checked={task.is_completed} 
+                  onChange={() => handleToggleTask(task)}
+                  disabled={busy}
+                />
+                <span style={{ flex: 1, textDecoration: task.is_completed ? "line-through" : "none", color: task.is_completed ? "var(--muted)" : "inherit" }}>
+                  {task.description}
+                </span>
+                <button 
+                  className="icon-btn btn-xs" 
+                  onClick={() => handleDeleteTask(task.id)}
+                  disabled={busy}
+                  style={{ opacity: 0.5 }}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+            {tasks.length === 0 && <li className="muted" style={{ fontSize: "0.9rem" }}>No items yet.</li>}
+          </ul>
+          
+          <form onSubmit={handleAddTask} style={{ display: "flex", gap: "0.5rem" }}>
+            <input 
+              type="text" 
+              placeholder="Add a new task or note..." 
+              value={newTaskText}
+              onChange={(e) => setNewTaskText(e.target.value)}
+              disabled={busy}
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="btn btn-default btn-sm" disabled={busy || !newTaskText.trim()}>Add</button>
+          </form>
+        </div>
 
         <div className="modal-actions">
           <button

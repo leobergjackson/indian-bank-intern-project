@@ -58,6 +58,21 @@ class Alert(Base):
     resolved_by: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     rule: Mapped["AlertRule"] = relationship(back_populates="alerts")
+    tasks: Mapped[list["AlertTask"]] = relationship(back_populates="alert", cascade="all, delete-orphan")
+
+
+class AlertTask(Base):
+    """A sub-task or checklist item attached to an alert."""
+
+    __tablename__ = "alert_tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    alert_id: Mapped[int] = mapped_column(ForeignKey("alerts.id"), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    alert: Mapped["Alert"] = relationship(back_populates="tasks")
 
 
 class Transaction(Base):

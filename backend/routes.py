@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from . import schemas, services
 from .database import get_db
-from .models import Alert, AlertRule, SystemLog, Transaction, utcnow
+from .models import Alert, AlertRule, AlertTask, SystemLog, Transaction, utcnow
 
 router = APIRouter(prefix="/api")
 
@@ -139,6 +139,39 @@ def update_alert_status(alert_id: int, payload: schemas.AlertStatusUpdate, db: S
     services.notify_clients({"type": "alert_updated",
                              "data": schemas.AlertOut.model_validate(alert).model_dump(mode="json")})
     return alert
+
+
+@router.post("/alerts/{alert_id}/tasks", response_model=schemas.AlertTaskOut, status_code=201, tags=["alerts"])
+def create_alert_task(alert_id: int, payload: schemas.AlertTaskCreate, db: Session = Depends(get_db)):
+    alert = db.get(Alert, alert_id)
+    if not alert:
+        raise HTTPException(404, "Alert not found.")
+    task = AlertTask(alert_id=alert_id, **payload.model_dump())
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    # Could notify clients if we want live task updates
+    return task
+
+
+@router.patch("/alerts/tasks/{task_id}", response_model=schemas.AlertTaskOut, tags=["alerts"])
+def update_alert_task(task_id: int, payload: schemas.AlertTaskUpdate, db: Session = Depends(get_db)):
+    task = db.get(AlertTask, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found.")
+    task.is_completed = payload.is_completed
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@router.delete("/alerts/tasks/{task_id}", status_code=204, tags=["alerts"])
+def delete_alert_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.get(AlertTask, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found.")
+    db.delete(task)
+    db.commit()
 
 
 # --------------------------------------------------------------------------- #

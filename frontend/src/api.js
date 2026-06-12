@@ -50,6 +50,10 @@ export function getAlerts(params = {}) {
 export const updateAlertStatus = (id, status, actor = "operator") =>
   request("PATCH", `/alerts/${id}/status`, { body: { status, actor } });
 
+export const createAlertTask = (alertId, task) => request("POST", `/alerts/${alertId}/tasks`, { body: task });
+export const updateAlertTask = (taskId, isCompleted) => request("PATCH", `/alerts/tasks/${taskId}`, { body: { is_completed: isCompleted } });
+export const deleteAlertTask = (taskId) => request("DELETE", `/alerts/tasks/${taskId}`);
+
 // ---- Transactions ----
 export const getTransactions = (limit = 50) => request("GET", `/transactions?limit=${limit}`);
 export const createTransaction = (txn) => request("POST", "/transactions", { body: txn });

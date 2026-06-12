@@ -112,6 +112,31 @@ class AlertRuleOut(AlertRuleBase):
 # --------------------------------------------------------------------------- #
 # Alerts
 # --------------------------------------------------------------------------- #
+class AlertTaskBase(BaseModel):
+    description: str = Field(..., min_length=1, max_length=255)
+    is_completed: bool = False
+
+
+class AlertTaskCreate(AlertTaskBase):
+    pass
+
+
+class AlertTaskUpdate(BaseModel):
+    is_completed: bool
+
+
+class AlertTaskOut(AlertTaskBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    alert_id: int
+    created_at: datetime
+
+    @field_serializer("created_at", when_used="always")
+    def _ser_dt(self, dt: datetime, _info):
+        return _iso_utc(dt)
+
+
 class AlertOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -131,6 +156,7 @@ class AlertOut(BaseModel):
     acknowledged_by: Optional[str]
     resolved_at: Optional[datetime]
     resolved_by: Optional[str]
+    tasks: list[AlertTaskOut] = []
 
     @field_serializer(
         "triggered_at", "acknowledged_at", "resolved_at", when_used="always"
