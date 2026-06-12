@@ -10,11 +10,13 @@ export function setAdminToken(token) {
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
 async function request(method, path, { body, admin = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (admin) headers["X-Admin-Token"] = getAdminToken();
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

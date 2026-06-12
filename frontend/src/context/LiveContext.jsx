@@ -43,8 +43,12 @@ export function LiveProvider({ children }) {
     let stopped = false;
 
     function connect() {
-      const proto = window.location.protocol === "https:" ? "wss" : "ws";
-      const ws = new WebSocket(`${proto}://${window.location.host}/ws/alerts`);
+      let wsUrl = import.meta.env.VITE_WS_URL;
+      if (!wsUrl) {
+        const proto = window.location.protocol === "https:" ? "wss" : "ws";
+        wsUrl = `${proto}://${window.location.host}/ws/alerts`;
+      }
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => setConnected(true);
