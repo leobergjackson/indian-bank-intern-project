@@ -52,7 +52,7 @@ export default function Dashboard() {
   // Live updates: throttle refetches triggered by WS events
   useEffect(() => {
     return subscribe((msg) => {
-      if (["alert", "alert_updated", "stats"].includes(msg.type)) {
+      if (["alert", "alert_updated", "stats", "poll"].includes(msg.type)) {
         clearTimeout(refetchTimer.current);
         refetchTimer.current = setTimeout(() => {
           loadAlerts();

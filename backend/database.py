@@ -21,7 +21,14 @@ load_dotenv(BASE_DIR / ".env")
 # Resolve the database URL. A relative sqlite path is interpreted relative to
 # the project root so the app behaves the same regardless of CWD.
 _raw_url = os.getenv("DATABASE_URL", "sqlite:///./database/banking_alerts.db")
-if _raw_url.startswith("sqlite:///") and "./" in _raw_url:
+if os.getenv("VERCEL") == "1":
+    import shutil
+    db_path = "/tmp/banking_alerts.db"
+    source = BASE_DIR / "database" / "banking_alerts.db"
+    if not os.path.exists(db_path) and source.exists():
+        shutil.copy2(source, db_path)
+    DATABASE_URL = f"sqlite:///{db_path}"
+elif _raw_url.startswith("sqlite:///") and "./" in _raw_url:
     rel = _raw_url.replace("sqlite:///", "", 1)
     abs_path = (BASE_DIR / rel.lstrip("./")).resolve()
     abs_path.parent.mkdir(parents=True, exist_ok=True)

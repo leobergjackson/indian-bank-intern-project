@@ -465,3 +465,51 @@ def seed_default_rules(db: Session) -> None:
         db.add(AlertRule(**r))
     db.commit()
     log_event(db, "INFO", "system", f"Seeded {len(DEFAULT_RULES)} default alert rules.")
+
+
+def seed_sample_data(db: Session, rounds: int = 30) -> None:
+    """Populate a realistic demo dataset (alerts, transactions, logs).
+
+    Used on serverless cold starts where the always-on simulator can't run, so
+    the dashboard always has data to show. Generates a mix of events, then
+    backdates them and varies their statuses for a believable history.
+    """
+    for _ in range(rounds):
+        generate_one(db)
+
+    now = utcnow()
+    actors = ["a.sharma", "r.iyer", "k.menon", "ops-bot"]
+    for alert in db.query(Alert).all():
+        alert.triggered_at = now - timedelta(minutes=random.randint(0, 60 * 36))
+        roll = random.random()
+        if roll < 0.22:
+            alert.status = schemas.AlertStatus.RESOLVED.value
+            alert.acknowledged_at = alert.triggered_at + timedelta(minutes=random.randint(2, 15))
+            alert.acknowledged_by = random.choice(actors)
+            alert.resolved_at = alert.acknowledged_at + timedelta(minutes=random.randint(5, 40))
+            alert.resolved_by = alert.acknowledged_by
+        elif roll < 0.45:
+            alert.status = schemas.AlertStatus.ACKNOWLEDGED.value
+            alert.acknowledged_at = alert.triggered_at + timedelta(minutes=random.randint(2, 15))
+            alert.acknowledged_by = random.choice(actors)
+    db.commit()
+    log_event(db, "INFO", "system", "Seeded sample demo dataset.")
+
+
+def bootstrap(generate_sample: bool = False) -> None:
+    """Idempotent startup: create tables, seed default rules, and (optionally)
+    seed a sample dataset when the alert table is empty.
+
+    Safe to call multiple times and from both the lifespan handler (local) and
+    at import time (serverless), where lifespan events may not run.
+    """
+    from .database import init_db
+
+    init_db()
+    db = SessionLocal()
+    try:
+        seed_default_rules(db)
+        if generate_sample and (db.query(func.count(Alert.id)).scalar() or 0) == 0:
+            seed_sample_data(db)
+    finally:
+        db.close()

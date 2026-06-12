@@ -10,7 +10,12 @@ export function setAdminToken(token) {
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+let API_BASE = import.meta.env.VITE_API_URL || "";
+if (API_BASE && !API_BASE.endsWith("/api")) {
+  API_BASE += "/api";
+} else if (!API_BASE) {
+  API_BASE = "/api";
+}
 
 async function request(method, path, { body, admin = false } = {}) {
   const headers = { "Content-Type": "application/json" };

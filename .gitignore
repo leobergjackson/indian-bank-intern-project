@@ -20,6 +20,11 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 
+# Vercel build output / local artifacts
+/public/
+.vercel/
+database/_vercel_test.db
+
 # Editor / OS
 .vscode/
 .idea/

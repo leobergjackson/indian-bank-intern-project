@@ -248,6 +248,43 @@ Then open **http://localhost:5173**.
 
 ---
 
+## ☁️ Deploying to Vercel (frontend + backend together)
+
+This repo is wired to deploy as a **single Vercel project** — the React app as
+static files and the FastAPI backend as a Python serverless function. Just
+**import the GitHub repo in Vercel and deploy** (no env vars required; same
+origin, so the frontend calls `/api/...` directly).
+
+**How it's wired** (already configured for you):
+
+| File | Role on Vercel |
+| --- | --- |
+| `vercel.json` | Builds the frontend → `public/`, runs `api/index.py` as a Python function, routes `/api/*` to it and everything else to the SPA |
+| `package.json` (root) | Build command: `cd frontend && npm install && npm run build` → `public/` |
+| `api/index.py` | Serverless entry — imports the FastAPI `app` and seeds the DB on cold start |
+
+### Important: what changes on serverless
+Vercel functions are **short-lived and stateless**, which means three things
+behave differently than on a normal always-on server — and the app adapts
+automatically:
+
+1. **No always-on simulator.** The background loop can't run, so on each cold
+   start the backend **auto-seeds a realistic sample dataset** (alerts across
+   every severity/category/status, transactions, and logs). Use the **⚡ Simulate
+   event** button (or Admin → *Generate one*) to create more on demand.
+2. **No WebSockets.** The dashboard automatically **falls back to polling**
+   (every 5 s) for live updates — the status pill shows *Auto-refresh* instead of
+   *Live*.
+3. **No persistent disk.** SQLite runs in the serverless `/tmp` area, so data is
+   **per-instance and resets on cold starts**. That's perfect for a demo. For
+   durable storage, point `DATABASE_URL` at a managed Postgres (e.g. Vercel
+   Postgres / Neon) and add it as an env var — no code changes needed.
+
+> Locally (`uvicorn`) you still get the **full experience**: live WebSocket
+> updates and the always-on simulator. None of the above changes local dev.
+
+---
+
 ## 🔧 Configuration (`.env`)
 
 | Variable                     | Default                                  | Purpose                              |

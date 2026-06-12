@@ -13,18 +13,17 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import services
-from .database import SessionLocal, init_db
+from .database import SessionLocal
 from .routes import router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    init_db()
+    # Startup — create tables + seed default rules (idempotent).
+    services.bootstrap(generate_sample=False)
     services.set_event_loop(asyncio.get_running_loop())
     db = SessionLocal()
     try:
-        services.seed_default_rules(db)
         services.log_event(db, "INFO", "system", "Banking Alert Management System started.")
     finally:
         db.close()

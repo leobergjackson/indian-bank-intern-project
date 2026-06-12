@@ -45,8 +45,14 @@ export function LiveProvider({ children }) {
     function connect() {
       let wsUrl = import.meta.env.VITE_WS_URL;
       if (!wsUrl) {
-        const proto = window.location.protocol === "https:" ? "wss" : "ws";
-        wsUrl = `${proto}://${window.location.host}/ws/alerts`;
+        const apiBase = import.meta.env.VITE_API_URL;
+        if (apiBase) {
+          const url = new URL(apiBase);
+          wsUrl = `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}/ws/alerts`;
+        } else {
+          const proto = window.location.protocol === "https:" ? "wss" : "ws";
+          wsUrl = `${proto}://${window.location.host}/ws/alerts`;
+        }
       }
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -90,6 +96,22 @@ export function LiveProvider({ children }) {
       if (wsRef.current) wsRef.current.close();
     };
   }, [pushToast]);
+
+  // Polling fallback — keeps the UI fresh where WebSockets aren't available
+  // (e.g. serverless / Vercel). Emits a synthetic "poll" event that page-level
+  // subscribers treat as a refetch signal. Harmless alongside a live socket.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      subscribers.current.forEach((cb) => {
+        try {
+          cb({ type: "poll" });
+        } catch {
+          /* ignore subscriber errors */
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const value = { connected, toasts, unread, subscribe, dismissToast, pushToast, clearUnread };
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

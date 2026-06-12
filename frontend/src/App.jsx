@@ -42,8 +42,8 @@ function Navbar({ theme, toggleTheme }) {
         </button>
         <div style={{ width: "1px", height: "16px", background: "var(--border)", margin: "0 8px" }} />
         
-        <span className={`conn-dot ${connected ? "online" : "offline"}`} title={connected ? "Live" : "Disconnected"} />
-        <span className="conn-text">{connected ? "Live" : "Offline"}</span>
+        <span className={`conn-dot ${connected ? "online" : "polling"}`} title={connected ? "Live (WebSocket)" : "Auto-refresh (polling)"} />
+        <span className="conn-text">{connected ? "Live" : "Auto-refresh"}</span>
         {unread > 0 && (
           <button className="btn btn-ghost btn-sm" onClick={clearUnread}>
             Clear ({unread})
